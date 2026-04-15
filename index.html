@@ -959,12 +959,47 @@ Smoke test job → auto-rollback if health fails for 2min
       </div>
     </div>
 
-    <h3>Resume Summary Line</h3>
-    <div class="resume-box">
-      <p>Built and scaled a polyglot microservices platform at A.P. Møller – Maersk processing 500K+ daily shipment events, developing a high-performance Go alerting microservice with goroutine worker pools achieving sub-100ms p99 alert latency, designing Kafka event pipelines on AWS MSK with a 6-topic architecture and KEDA-based autoscaling, and establishing full-stack observability using Prometheus, Grafana, and AWS X-Ray across Java Spring Boot and Go services deployed on EKS with GitOps via ArgoCD.</p>
-    </div>
-  </section>
+<h3>Resume Summary Line</h3>
+<div class="resume-box">
+  <p>Built and scaled a polyglot microservices platform at A.P. Møller – Maersk processing 500K+ daily shipment events, developing a high-performance Go alerting microservice with goroutine worker pools achieving sub-100ms p99 alert latency, designing Kafka event pipelines on AWS MSK with a 6-topic architecture and KEDA-based autoscaling, and establishing full-stack observability using Prometheus, Grafana, and AWS X-Ray across Java Spring Boot and Go services deployed on EKS with GitOps via ArgoCD.</p>
+</div>
 
+<h3 style="margin-top:2rem">Experience Points</h3>
+<ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:10px;margin-top:1rem">
+
+  <li style="border-left:2px solid var(--accent);padding:0.75rem 1rem;background:var(--bg3);border-radius:0 4px 4px 0">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:5px;letter-spacing:0.06em">GO · AWS MSK · KAFKA</div>
+    <p style="font-size:12px;margin:0">Designed and developed a Go-based real-time alerting microservice consuming from AWS MSK (Kafka) using a goroutine worker pool of 20 concurrent workers, executing parallel rule evaluations (delay, route deviation, SLA breach, port congestion) — reducing alert processing p99 latency from 500ms+ (Java GC-affected) to under 100ms.</p>
+  </li>
+
+  <li style="border-left:2px solid var(--purple);padding:0.75rem 1rem;background:var(--bg3);border-radius:0 4px 4px 0">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--purple);margin-bottom:5px;letter-spacing:0.06em">JAVA 17 · SPRING BOOT 3 · AWS MULTI-AZ</div>
+    <p style="font-size:12px;margin:0">Built and owned the Shipment Core Service in Java 17 &amp; Spring Boot 3, implementing an event-sourced state machine across 5 shipment lifecycle stages, exposing REST &amp; gRPC APIs, processing 500K+ events per day with 99.95% uptime across a Multi-AZ AWS deployment.</p>
+  </li>
+
+  <li style="border-left:2px solid var(--accent);padding:0.75rem 1rem;background:var(--bg3);border-radius:0 4px 4px 0">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:5px;letter-spacing:0.06em">KAFKA · AWS MSK · S3 · ATHENA</div>
+    <p style="font-size:12px;margin:0">Designed a 6-topic Kafka event architecture on AWS MSK with 24 partitions on high-throughput topics, manual offset commits for exactly-once alert semantics, Kafka Connect S3 Sink for Parquet archival, and Dead Letter Queue monitoring — reducing Athena query costs by ~85% via columnar storage vs raw JSON.</p>
+  </li>
+
+  <li style="border-left:2px solid var(--green);padding:0.75rem 1rem;background:var(--bg3);border-radius:0 4px 4px 0">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--green);margin-bottom:5px;letter-spacing:0.06em">KEDA · AWS EKS · AUTOSCALING</div>
+    <p style="font-size:12px;margin:0">Implemented KEDA-based autoscaling on AWS EKS for the Go alerting service, scaling pods directly on Kafka consumer lag metric instead of CPU — cutting scale-out response time significantly compared to CPU-based HPA, with Spot instances on stateless alerting pods reducing compute costs.</p>
+  </li>
+
+  <li style="border-left:2px solid #f472b6;padding:0.75rem 1rem;background:var(--bg3);border-radius:0 4px 4px 0">
+    <div style="font-family:var(--mono);font-size:10px;color:#f472b6;margin-bottom:5px;letter-spacing:0.06em">PROMETHEUS · GRAFANA · X-RAY · PAGERDUTY</div>
+    <p style="font-size:12px;margin:0">Built full-stack observability across Java and Go services using Micrometer and prometheus/client_golang exposing custom business metrics (DLQ depth, SLA breach rate, rule eval p99), 4 Grafana dashboards with automated deploy annotations, AWS X-Ray distributed traces propagated via Kafka headers, and Alertmanager routing critical alerts to PagerDuty.</p>
+  </li>
+
+  <li style="border-left:2px solid var(--amber);padding:0.75rem 1rem;background:var(--bg3);border-radius:0 4px 4px 0">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--amber);margin-bottom:5px;letter-spacing:0.06em">MTLS · JWT · COGNITO · ARGOCD · GITOPS</div>
+    <p style="font-size:12px;margin:0">Established a zero-trust service mesh within VPC using mTLS (AWS ACM Private CA) for all service-to-service communication, JWT-based external auth via Cognito, and a GitOps CI/CD pipeline (GitHub Actions → ECR → ArgoCD) achieving under 2-minute rollback on failed deployments.</p>
+  </li>
+
+</ul>
+  </section>
+<a href="./resume.pdf" target="_blank" style="...">Download Resume</a>
 </main>
 
 <script>
