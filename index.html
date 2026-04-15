@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maersk — Real-Time Shipment Alerting System</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --bg2: #111418;
+    --bg3: #181c22;
+    --border: #1e2530;
+    --border2: #2a3340;
+    --text: #c8d4e0;
+    --text2: #6b7d8f;
+    --text3: #3d4f60;
+    --accent: #0ea5e9;
+    --accent2: #0369a1;
+    --green: #10b981;
+    --green-dim: #064e3b;
+    --purple: #818cf8;
+    --purple-dim: #1e1b4b;
+    --amber: #f59e0b;
+    --amber-dim: #451a03;
+    --teal: #2dd4bf;
+    --teal-dim: #042f2e;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* --- HEADER --- */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 0 2.5rem;
+    background: linear-gradient(180deg, #060810 0%, var(--bg) 100%);
+  }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 0 2rem; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(22px, 3vw, 32px);
+    font-weight: 500;
+    color: #e8f0f8;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+
+  .header-meta {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .meta-label { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; }
+  .meta-value { font-size: 13px; color: var(--text); font-weight: 400; }
+
+  /* --- METRICS BAR --- */
+  .metrics-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin: 2rem 0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .metric {
+    background: var(--bg2);
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+  }
+  .metric-val {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--accent);
+    display: block;
+  }
+  .metric-lbl {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 2px;
+    font-family: var(--mono);
+    letter-spacing: 0.04em;
+  }
+
+  /* --- NAV --- */
+  nav {
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(10,12,15,0.95);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+  }
+  .nav-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+  nav a {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    text-decoration: none;
+    padding: 0.85rem 1.25rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  nav a:hover { color: var(--text); border-bottom-color: var(--border2); }
+  nav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* --- MAIN CONTENT --- */
+  main { max-width: 960px; margin: 0 auto; padding: 0 2rem 4rem; }
+
+  section { padding: 3rem 0; border-bottom: 1px solid var(--border); }
+  section:last-child { border-bottom: none; }
+
+  h2 {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  h3 {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 500;
+    color: #dce8f4;
+    margin-bottom: 0.75rem;
+    margin-top: 2rem;
+  }
+  h3:first-child { margin-top: 0; }
+
+  p { color: var(--text2); line-height: 1.8; margin-bottom: 0.75rem; }
+  p:last-child { margin-bottom: 0; }
+
+  /* --- ARCHITECTURE DIAGRAM --- */
+  .arch-diagram { display: flex; flex-direction: column; gap: 2px; }
+
+  .arch-layer {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem 1.25rem;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  .arch-layer:hover { border-color: var(--border2); }
+
+  .layer-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .layer-title-group {}
+  .layer-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: #dce8f4;
+  }
+  .layer-desc { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: var(--mono); }
+
+  .lang-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    letter-spacing: 0.04em;
+  }
+  .badge-go { background: var(--teal-dim); color: var(--teal); border: 1px solid #0d5e5a; }
+  .badge-java { background: var(--purple-dim); color: var(--purple); border: 1px solid #312e81; }
+  .badge-aws { background: var(--amber-dim); color: var(--amber); border: 1px solid #78350f; }
+  .badge-infra { background: #0c1a10; color: var(--green); border: 1px solid var(--green-dim); }
+  .badge-obs { background: #1a0c10; color: #f472b6; border: 1px solid #831843; }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 10px;
+  }
+  .chip {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid;
+    letter-spacing: 0.03em;
+  }
+  .chip-blue { background: #071929; color: #7dd3fc; border-color: #0c4a6e; }
+  .chip-teal { background: var(--teal-dim); color: var(--teal); border-color: #0d5e5a; }
+  .chip-purple { background: var(--purple-dim); color: var(--purple); border-color: #312e81; }
+  .chip-amber { background: var(--amber-dim); color: var(--amber); border-color: #78350f; }
+  .chip-gray { background: #111418; color: #94a3b8; border-color: #1e2a38; }
+  .chip-green { background: #052010; color: #4ade80; border-color: #14532d; }
+  .chip-pink { background: #1a0c10; color: #f472b6; border-color: #831843; }
+
+  .twin-layers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+  }
+
+  .kafka-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 10px;
+  }
+  .topic {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: #0a1520;
+    border: 1px solid #0c2540;
+    color: #38bdf8;
+    letter-spacing: 0.03em;
+  }
+
+  .arrow-connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 0;
+    gap: 8px;
+  }
+  .arrow-connector span {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.04em;
+  }
+  .arrow-line {
+    width: 1px;
+    height: 12px;
+    background: var(--border2);
+  }
+
+  /* --- GRID CARDS --- */
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 1rem;
+  }
+  .card {
+    background: var(--bg2);
+    padding: 1.25rem;
+  }
+  .card-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: #dce8f4;
+    margin-bottom: 0.5rem;
+  }
+  .card p { font-size: 12px; line-height: 1.7; }
+
+  /* --- CODE BLOCKS --- */
+  pre {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.25rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: #a8c4dc;
+  }
+  code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #7dd3fc;
+  }
+
+  /* --- TABLE --- */
+  .table-wrap { overflow-x: auto; margin: 1rem 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+  th {
+    text-align: left;
+    padding: 0.6rem 1rem;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+  td {
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    vertical-align: top;
+  }
+  td:first-child { color: var(--accent); }
+  tr:hover td { background: var(--bg3); }
+
+  /* --- ALERT RULE BLOCK --- */
+  .alert-rule {
+    border-left: 2px solid var(--amber);
+    padding: 0.75rem 1rem;
+    background: var(--bg3);
+    margin: 0.5rem 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .alert-rule .rule-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--amber);
+    margin-bottom: 4px;
+  }
+  .alert-rule p { font-size: 11px; margin: 0; }
+
+  /* --- RESUME BOX --- */
+  .resume-box {
+    border: 1px solid var(--accent2);
+    border-radius: 4px;
+    padding: 1.5rem;
+    background: #030d18;
+    margin-top: 1rem;
+    position: relative;
+  }
+  .resume-box::before {
+    content: 'RESUME LINE';
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    position: absolute;
+    top: -1px;
+    left: 12px;
+    background: #030d18;
+    padding: 0 6px;
+    transform: translateY(-50%);
+  }
+  .resume-box p {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.8;
+    font-style: italic;
+  }
+
+  /* --- FLOW DIAGRAM --- */
+  .flow-box {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+    color: #7dd3fc;
+    line-height: 2;
+  }
+
+  /* --- DECISION TABLE --- */
+  .decision-row { display: flex; gap: 0; margin: 2px 0; }
+  .decision-key {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 0.5rem 0.75rem;
+    min-width: 220px;
+    flex-shrink: 0;
+    border-radius: 4px 0 0 4px;
+  }
+  .decision-val {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: none;
+    padding: 0.5rem 0.75rem;
+    flex: 1;
+    border-radius: 0 4px 4px 0;
+  }
+
+  /* animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  section { animation: fadeUp 0.4s ease both; }
+  section:nth-child(1) { animation-delay: 0.05s; }
+  section:nth-child(2) { animation-delay: 0.1s; }
+  section:nth-child(3) { animation-delay: 0.15s; }
+
+  @media (max-width: 640px) {
+    .twin-layers { grid-template-columns: 1fr; }
+    .card-grid { grid-template-columns: 1fr; }
+    .metrics-bar { grid-template-columns: 1fr 1fr; }
+    .decision-key { min-width: 150px; }
+    h1 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div class="eyebrow">A.P. Møller – Maersk &nbsp;·&nbsp; Global Technology Centre</div>
+    <h1>Real-Time Shipment<br>Alerting System</h1>
+    <p style="color:var(--text2);font-size:13px;max-width:520px">End-to-end backend architecture — polyglot microservices on AWS, event-driven via Kafka, observed with Prometheus + Grafana.</p>
+    <div class="header-meta">
+      <div class="meta-item"><span class="meta-label">Pattern</span><span class="meta-value">Event-Driven Polyglot Microservices</span></div>
+      <div class="meta-item"><span class="meta-label">Cloud</span><span class="meta-value">AWS (Multi-AZ, 3 AZs)</span></div>
+      <div class="meta-item"><span class="meta-label">Languages</span><span class="meta-value">Java 17 · Go 1.21 · Python</span></div>
+      <div class="meta-item"><span class="meta-label">Experience</span><span class="meta-value">3 Years</span></div>
+    </div>
+  </div>
+</header>
+
+<nav>
+  <div class="nav-inner">
+    <a href="#architecture" class="active">Architecture</a>
+    <a href="#kafka">Kafka</a>
+    <a href="#services">Services</a>
+    <a href="#storage">Storage</a>
+    <a href="#infra">Infra</a>
+    <a href="#observability">Observability</a>
+    <a href="#decisions">Decisions</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- METRICS -->
+  <div class="metrics-bar" style="margin-top:2rem">
+    <div class="metric"><span class="metric-val">500K+</span><span class="metric-lbl">events / day</span></div>
+    <div class="metric"><span class="metric-val">&lt;100ms</span><span class="metric-lbl">alert p99</span></div>
+    <div class="metric"><span class="metric-val">99.95%</span><span class="metric-lbl">uptime SLA</span></div>
+    <div class="metric"><span class="metric-val">3 AZs</span><span class="metric-lbl">HA deployment</span></div>
+  </div>
+
+  <!-- ARCHITECTURE DIAGRAM -->
+  <section id="architecture">
+    <h2>System Architecture</h2>
+    <div class="arch-diagram">
+
+      <!-- Ingestion -->
+      <div class="arch-layer">
+        <div class="layer-header">
+          <div class="layer-title-group">
+            <div class="layer-name">Ingestion Layer</div>
+            <div class="layer-desc">GPS devices · Port authority APIs · AIS vessel feeds · Weather APIs · ERP webhooks</div>
+          </div>
+        </div>
+        <div class="chips">
+          <span class="chip chip-gray">GPS trackers (NMEA/TCP)</span>
+          <span class="chip chip-gray">AIS vessel feed</span>
+          <span class="chip chip-gray">Port authority REST</span>
+          <span class="chip chip-gray">Weather API (OpenMeteo)</span>
+          <span class="chip chip-gray">ERP webhooks (SAP)</span>
+        </div>
+      </div>
+
+      <div class="arrow-connector"><div class="arrow-line"></div><span>events pushed via REST / TCP</span><div class="arrow-line"></div></div>
+
+      <!-- Kafka -->
+      <div class="arch-layer" style="border-color:#0c4a6e">
+        <div class="layer-header">
+          <div class="layer-title-group">
+            <div class="layer-name">Apache Kafka — Event Backbone</div>
+            <div class="layer-desc">AWS MSK · 3-broker cluster · replication factor 3 · min ISR 2</div>
+          </div>
+          <span class="lang-badge badge-aws">AWS MSK</span>
+        </div>
+        <div class="kafka-topics">
+          <span class="topic">shipment-events</span>
+          <span class="topic">alert-triggers</span>
+          <span class="topic">eta-updates</span>
+          <span class="topic">port-status</span>
+          <span class="topic">notification-dispatch</span>
+          <span class="topic">audit-log</span>
+        </div>
+      </div>
+
+      <div class="arrow-connector"><div class="arrow-line"></div><span>consumed by independent consumer groups</span><div class="arrow-line"></div></div>
+
+      <!-- Microservices -->
+      <div class="twin-layers">
+        <div class="arch-layer" style="border-color:#312e81">
+          <div class="layer-header">
+            <div class="layer-title-group">
+              <div class="layer-name">Shipment Core Service</div>
+              <div class="layer-desc">Business logic · lifecycle · SLA engine</div>
+            </div>
+            <span class="lang-badge badge-java">Java 17 · Spring Boot 3</span>
+          </div>
+          <div class="chips">
+            <span class="chip chip-purple">Booking API</span>
+            <span class="chip chip-purple">State machine</span>
+            <span class="chip chip-purple">SLA engine</span>
+            <span class="chip chip-purple">Event sourcing</span>
+            <span class="chip chip-purple">REST + gRPC</span>
+          </div>
+        </div>
+        <div class="arch-layer" style="border-color:#0d5e5a">
+          <div class="layer-header">
+            <div class="layer-title-group">
+              <div class="layer-name">Alerting Service</div>
+              <div class="layer-desc">High-throughput · goroutine worker pool</div>
+            </div>
+            <span class="lang-badge badge-go">Go 1.21</span>
+          </div>
+          <div class="chips">
+            <span class="chip chip-teal">Delay detection</span>
+            <span class="chip chip-teal">Route deviation</span>
+            <span class="chip chip-teal">SLA breach</span>
+            <span class="chip chip-teal">Port congestion</span>
+            <span class="chip chip-teal">Rule engine (JSON)</span>
+          </div>
+        </div>
+        <div class="arch-layer" style="border-color:#312e81">
+          <div class="layer-header">
+            <div class="layer-title-group">
+              <div class="layer-name">ETA Prediction Service</div>
+              <div class="layer-desc">ML inference · Python FastAPI sidecar</div>
+            </div>
+            <span class="lang-badge badge-java">Java · Spring Batch</span>
+          </div>
+          <div class="chips">
+            <span class="chip chip-purple">Feature pipeline</span>
+            <span class="chip chip-purple">XGBoost model</span>
+            <span class="chip chip-purple">Kafka consumer</span>
+          </div>
+        </div>
+        <div class="arch-layer" style="border-color:#0d5e5a">
+          <div class="layer-header">
+            <div class="layer-title-group">
+              <div class="layer-name">Notification Service</div>
+              <div class="layer-desc">Fan-out · email · SMS · WebSocket push</div>
+            </div>
+            <span class="lang-badge badge-go">Go 1.21</span>
+          </div>
+          <div class="chips">
+            <span class="chip chip-teal">AWS SES</span>
+            <span class="chip chip-teal">AWS SNS</span>
+            <span class="chip chip-teal">WebSocket hub</span>
+            <span class="chip chip-teal">Retry + DLQ</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="arrow-connector"><div class="arrow-line"></div><span>reads / writes</span><div class="arrow-line"></div></div>
+
+      <!-- Storage -->
+      <div class="arch-layer" style="border-color:#78350f">
+        <div class="layer-header">
+          <div class="layer-title-group">
+            <div class="layer-name">Data Persistence</div>
+            <div class="layer-desc">RDS · ElastiCache · S3 Data Lake · OpenSearch</div>
+          </div>
+          <span class="lang-badge badge-aws">AWS managed</span>
+        </div>
+        <div class="chips">
+          <span class="chip chip-amber">RDS PostgreSQL 15 (Multi-AZ)</span>
+          <span class="chip chip-amber">ElastiCache Redis 7</span>
+          <span class="chip chip-amber">S3 + Glue (Parquet)</span>
+          <span class="chip chip-amber">OpenSearch Service</span>
+        </div>
+      </div>
+
+      <div class="arrow-connector"><div class="arrow-line"></div><span>traffic enters via</span><div class="arrow-line"></div></div>
+
+      <!-- Networking -->
+      <div class="arch-layer" style="border-color:#78350f">
+        <div class="layer-header">
+          <div class="layer-title-group">
+            <div class="layer-name">API Gateway + Networking</div>
+            <div class="layer-desc">VPC private subnets · zero-trust mTLS service mesh</div>
+          </div>
+          <span class="lang-badge badge-aws">AWS</span>
+        </div>
+        <div class="chips">
+          <span class="chip chip-amber">AWS API Gateway</span>
+          <span class="chip chip-amber">ALB (internal)</span>
+          <span class="chip chip-amber">Route 53</span>
+          <span class="chip chip-amber">VPC + private subnets</span>
+          <span class="chip chip-amber">WAF + Shield</span>
+          <span class="chip chip-amber">JWT (Cognito)</span>
+          <span class="chip chip-amber">mTLS (ACM Private CA)</span>
+        </div>
+      </div>
+
+      <div class="arrow-connector"><div class="arrow-line"></div><span>deployed via</span><div class="arrow-line"></div></div>
+
+      <!-- EKS -->
+      <div class="arch-layer" style="border-color:#14532d">
+        <div class="layer-header">
+          <div class="layer-title-group">
+            <div class="layer-name">Kubernetes — AWS EKS</div>
+            <div class="layer-desc">GitHub Actions → ECR → Helm → ArgoCD GitOps</div>
+          </div>
+          <span class="lang-badge badge-infra">EKS + ECR</span>
+        </div>
+        <div class="chips">
+          <span class="chip chip-green">Managed node groups</span>
+          <span class="chip chip-green">HPA + KEDA (Kafka lag)</span>
+          <span class="chip chip-green">PodDisruptionBudgets</span>
+          <span class="chip chip-green">Spot for alerting pods</span>
+          <span class="chip chip-green">Blue/green deploys</span>
+          <span class="chip chip-green">ArgoCD GitOps</span>
+        </div>
+      </div>
+
+      <div class="arrow-connector"><div class="arrow-line"></div><span>observed by</span><div class="arrow-line"></div></div>
+
+      <!-- Observability -->
+      <div class="arch-layer" style="border-color:#831843">
+        <div class="layer-header">
+          <div class="layer-title-group">
+            <div class="layer-name">Observability Stack</div>
+            <div class="layer-desc">Prometheus · Grafana · X-Ray · OpenTelemetry · Loki</div>
+          </div>
+          <span class="lang-badge badge-obs">Monitoring</span>
+        </div>
+        <div class="chips">
+          <span class="chip chip-pink">Prometheus + Alertmanager</span>
+          <span class="chip chip-pink">Grafana (4 dashboards)</span>
+          <span class="chip chip-pink">AWS X-Ray traces</span>
+          <span class="chip chip-pink">OpenTelemetry SDK</span>
+          <span class="chip chip-pink">Loki + Fluentd</span>
+          <span class="chip chip-pink">PagerDuty on-call</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- KAFKA -->
+  <section id="kafka">
+    <h2>Kafka — Event Backbone</h2>
+
+    <h3>Cluster Configuration</h3>
+    <p>3 brokers on AWS MSK, replication factor 3, min ISR 2. Partition count 24 for high-throughput topics — tuned to match alerting service worker pool size. Compression: <code>lz4</code>.</p>
+
+    <h3>Topic Design</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Topic</th><th>Purpose</th><th>Partitions</th><th>Retention</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>shipment-events</td><td>Raw inbound events from all sources</td><td>24</td><td>7 days</td></tr>
+          <tr><td>alert-triggers</td><td>Generated alerts → notification service</td><td>12</td><td>7 days</td></tr>
+          <tr><td>eta-updates</td><td>ML-computed ETA recalculations</td><td>12</td><td>3 days</td></tr>
+          <tr><td>port-status</td><td>Port congestion updates</td><td>6</td><td>1 day</td></tr>
+          <tr><td>notification-dispatch</td><td>Fan-out to SES/SNS/WebSocket</td><td>12</td><td>3 days</td></tr>
+          <tr><td>audit-log</td><td>Immutable event log → S3 archival</td><td>6</td><td>30 days</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Key Design Decisions</h3>
+    <p>Manual offset commit (<code>enable.auto.commit=false</code>) on all consumers for exactly-once semantics on alert generation. Each service maintains its own consumer group — independent scaling and replay. Dead Letter Queue topics (<code>{topic}.dlq</code>) for failed events after 3 retries; DLQ depth monitored as a Prometheus gauge with PagerDuty alerting at depth &gt; 500.</p>
+
+    <h3>Kafka Connect — S3 Sink</h3>
+    <p>Kafka Connect S3 Sink ships events from <code>shipment-events</code> to S3 in Parquet format with snappy compression, hourly partitioned:</p>
+    <pre>s3://maersk-datalake/shipment-events/year=2024/month=10/day=15/hour=14/</pre>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="services">
+    <h2>Microservices Deep Dive</h2>
+
+    <h3>Shipment Core Service — Java 17 + Spring Boot 3</h3>
+    <p>Primary business logic service. Handles the complete shipment lifecycle, SLA rule management, and event sourcing. Exposes REST APIs externally and gRPC internally.</p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Key capabilities</div>
+        <p>Booking creation and validation. Status state machine (BOOKED → IN_TRANSIT → AT_PORT → DELIVERED). SLA rule storage (PostgreSQL) with Redis cache (5-min TTL). Event sourcing — every state change published to Kafka.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Tech choices</div>
+        <p>Spring Data JPA + Hibernate. Spring Kafka with custom ProducerInterceptor for trace ID injection. Micrometer + Prometheus for custom business metrics. Flyway for versioned DB migrations. PgBouncer connection pool (max 200, transaction mode).</p>
+      </div>
+    </div>
+
+    <h3>Alerting Service — Go 1.21</h3>
+    <p>Highest-throughput service. Purpose-built in Go to avoid JVM GC pauses that caused Java p99 spikes above 500ms. Uses a goroutine worker pool for parallel rule evaluation.</p>
+
+    <div class="flow-box">
+Kafka consumer<br>
+&nbsp;&nbsp;&nbsp;↓<br>
+Event channel (buffered, cap=1000)<br>
+&nbsp;&nbsp;&nbsp;↓<br>
+Worker pool (20 goroutines)<br>
+&nbsp;&nbsp;&nbsp;↓<br>
+Parallel rule checks (goroutines)<br>
+&nbsp;&nbsp;&nbsp;├── checkDelay()<br>
+&nbsp;&nbsp;&nbsp;├── checkRouteDeviation()<br>
+&nbsp;&nbsp;&nbsp;├── checkPortCongestion()<br>
+&nbsp;&nbsp;&nbsp;└── checkSLABreach()<br>
+&nbsp;&nbsp;&nbsp;↓<br>
+Alert → alert-triggers Kafka topic
+    </div>
+
+    <p>Rule engine loads config from PostgreSQL at startup, hot-reloads every 5 minutes via background goroutine:</p>
+    <pre>{
+  "delay_threshold_hours": 2,
+  "route_deviation_km": 50,
+  "port_congestion_eta_multiplier": 1.5,
+  "sla_warning_buffer_hours": 4
+}</pre>
+
+    <p>Circuit breaker on gRPC calls to core service using <code>sony/gobreaker</code>. Retry with exponential backoff + jitter (max 3 retries).</p>
+
+    <h3>Metrics Exposed (Go Alerting Service)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Metric</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>alerting_events_processed_total</td><td>Counter</td><td>By event type label</td></tr>
+          <tr><td>alerting_rule_evaluation_duration_seconds</td><td>Histogram</td><td>p50 / p95 / p99</td></tr>
+          <tr><td>alerting_alerts_generated_total</td><td>Counter</td><td>By alert type label</td></tr>
+          <tr><td>alerting_dlq_depth</td><td>Gauge</td><td>Current DLQ backlog depth</td></tr>
+          <tr><td>alerting_worker_pool_idle_goroutines</td><td>Gauge</td><td>Pool saturation indicator</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>ETA Prediction Service — Java + Python Sidecar</h3>
+    <p>Hybrid service: Java handles Kafka consumption and orchestration; a Python FastAPI sidecar serves an XGBoost model over local HTTP (<code>POST localhost:8001/predict</code>). Features: vessel speed, historical port wait times, weather conditions, route segment distance. Results published to <code>eta-updates</code> topic.</p>
+
+    <h3>Notification Service — Go 1.21</h3>
+    <p>Consumes <code>notification-dispatch</code> and fans out to three channels: AWS SES for email (HTML templates via <code>html/template</code>), AWS SNS for SMS on critical SLA breaches, WebSocket push to dashboard via <code>gorilla/websocket</code> hub pattern with per-shipment subscription rooms. Idempotency key per alert prevents duplicate sends.</p>
+  </section>
+
+  <!-- STORAGE -->
+  <section id="storage">
+    <h2>Storage Layer</h2>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">AWS RDS — PostgreSQL 15</div>
+        <p>Multi-AZ deployment. Automated failover &lt;60s. Read replica for reporting and ML feature extraction. PgBouncer transaction-mode pooling (max 200 connections). Key tables: shipments, shipment_events (event store), sla_rules, alerts, audit_log. shipment_events partitioned by month.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Amazon ElastiCache — Redis 7</div>
+        <p>Cluster mode disabled (3 replicas). Use cases: active shipment state cache (TTL 10m), SLA rule cache (TTL 5m), rate limiting (sliding window), distributed locks via Redisson for idempotent Kafka processing, alert deduplication (SET + EXPIRE, 30s window).</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Amazon S3 + AWS Glue (Data Lake)</div>
+        <p>Kafka Connect S3 Sink. Parquet format, snappy compression, hourly partitioning. Glue crawler auto-discovers schema. Athena for ad-hoc queries and ML dataset extraction. Lifecycle: Standard → IA after 30d → Glacier after 90d. ~10x storage savings vs JSON.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Amazon OpenSearch Service</div>
+        <p>3-node cluster, dedicated masters. Index: alerts-{yyyy-mm} with monthly rollover. Used for: alert history search (ops dashboard), full-text shipment search, log aggregation from Fluentd. Index aliases enable zero-downtime reindexing during mapping changes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- INFRA -->
+  <section id="infra">
+    <h2>Infrastructure + Deployment</h2>
+
+    <h3>Kubernetes on AWS EKS</h3>
+    <p>Managed node groups: <code>m5.xlarge</code> for Java services, <code>c5.large</code> for Go services, Spot <code>c5.large</code> for alerting pods (stateless, safely interruptible). Namespaces: <code>shipment-core</code>, <code>alerting</code>, <code>notification</code>, <code>monitoring</code>.</p>
+    <p>Every service has a <code>PodDisruptionBudget</code> (minAvailable: 1). Config via ConfigMap; secrets pulled from AWS Secrets Manager using External Secrets Operator — no secrets in Git.</p>
+
+    <h3>Autoscaling Strategy</h3>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Java services — CPU-based HPA</div>
+        <p>Scales at CPU &gt; 70%. Min 3 replicas, max 10. Stateless — no affinity rules needed. Spring Boot actuator /health endpoint used for readiness and liveness probes.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Go alerting — KEDA (Kafka lag)</div>
+        <p>KEDA scales alerting pods directly on Kafka consumer lag metric. CPU is a lagging indicator for this workload; lag is direct and responsive. Scale-to-zero not used — minimum 2 pods for HA.</p>
+      </div>
+    </div>
+
+    <h3>CI/CD Pipeline — GitHub Actions + ArgoCD</h3>
+    <div class="flow-box">
+push to main<br>
+&nbsp;&nbsp;&nbsp;↓<br>
+GitHub Actions: unit + integration tests<br>
+&nbsp;&nbsp;&nbsp;↓<br>
+Docker build → Trivy image scan → push to ECR<br>
+&nbsp;&nbsp;&nbsp;↓<br>
+Helm chart values updated (image tag)<br>
+&nbsp;&nbsp;&nbsp;↓<br>
+ArgoCD detects drift → sync to EKS<br>
+&nbsp;&nbsp;&nbsp;↓<br>
+Blue/green via ALB weighted target group<br>
+&nbsp;&nbsp;&nbsp;↓<br>
+Smoke test job → auto-rollback if health fails for 2min
+    </div>
+
+    <h3>Networking — Zero Trust</h3>
+    <p>All services in VPC private subnets. NAT Gateway for outbound. No public IPs on any pod. Service-to-service communication authenticated with mTLS — certificates issued by AWS ACM Private CA with automated rotation. External traffic enters only via API Gateway (JWT auth via Cognito) → ALB → services.</p>
+  </section>
+
+  <!-- OBSERVABILITY -->
+  <section id="observability">
+    <h2>Observability</h2>
+
+    <h3>Prometheus + Alertmanager</h3>
+    <p>Both Java (Micrometer) and Go (<code>prometheus/client_golang</code>) expose <code>/metrics</code>. Prometheus scrapes every 15s. Custom ServiceMonitors in each namespace.</p>
+
+    <p><strong style="color:var(--text);font-weight:500">Key alerting rules:</strong></p>
+
+    <div class="alert-rule">
+      <div class="rule-name">KafkaConsumerLagHigh</div>
+      <p>Fires if kafka_consumer_group_lag &gt; 10,000 for 2 minutes. Routes → PagerDuty P2.</p>
+    </div>
+    <div class="alert-rule">
+      <div class="rule-name">AlertingLatencyHigh</div>
+      <p>Fires if p99(alerting_rule_evaluation_duration_seconds) &gt; 100ms for 1 minute. Routes → PagerDuty P1.</p>
+    </div>
+    <div class="alert-rule">
+      <div class="rule-name">DLQDepthCritical</div>
+      <p>Fires immediately (for: 0m) if alerting_dlq_depth &gt; 500. Routes → PagerDuty P1 + Slack.</p>
+    </div>
+    <div class="alert-rule">
+      <div class="rule-name">SLABreachRateHigh</div>
+      <p>Fires if rate of SLA breach alerts &gt; 50/min for 5 minutes. Routes → Slack #ops-alerts.</p>
+    </div>
+
+    <h3>Grafana Dashboards</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Dashboard</th><th>Key panels</th></tr></thead>
+        <tbody>
+          <tr><td>Shipment throughput</td><td>Events/sec, Kafka publish rate, topic lag heatmap, error rate</td></tr>
+          <tr><td>Alerting service health</td><td>Worker pool utilisation, rule eval p99, alerts/min by type, DLQ depth</td></tr>
+          <tr><td>Kafka cluster health</td><td>Broker CPU, under-replicated partitions, network I/O, consumer group lag</td></tr>
+          <tr><td>SLA compliance</td><td>SLA breach rate by route, delay distribution histogram, ETA accuracy</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Every production deploy annotated automatically via Grafana Annotations API in the CI pipeline — making incident correlation to deploys instant.</p>
+
+    <h3>Distributed Tracing — AWS X-Ray + OpenTelemetry</h3>
+    <p>Java services: <code>opentelemetry-java-agent</code> auto-instrumentation. Go services: manual with <code>go.opentelemetry.io/otel</code>. Trace ID injected into Kafka record headers (<code>X-B3-TraceId</code>) for cross-service correlation. X-Ray service map shows full graph: API Gateway → Core Service → Kafka → Alerting Service → RDS.</p>
+
+    <h3>Structured Logging</h3>
+    <p>Java: Logback + <code>logstash-logback-encoder</code> (JSON output). Go: <code>zerolog</code> (JSON, zero-allocation). Consistent log fields across all services: <code>traceId</code>, <code>shipmentId</code>, <code>service</code>, <code>level</code>, <code>message</code>, <code>durationMs</code>. Fluentd DaemonSet ships to CloudWatch Logs. 30-day retention per log group.</p>
+  </section>
+
+  <!-- DECISIONS -->
+  <section id="decisions">
+    <h2>Key Technical Decisions</h2>
+
+    <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:2rem">
+      <div class="decision-row">
+        <div class="decision-key">Go for alerting service</div>
+        <div class="decision-val">Java GC pauses caused p99 spikes &gt;500ms; Go goroutines eliminated this, achieving &lt;100ms p99 consistently</div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-key">Kafka over SQS</div>
+        <div class="decision-val">Need for multiple independent consumer groups and event replay capability — not possible with SQS</div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-key">Manual Kafka offset commit</div>
+        <div class="decision-val">Exactly-once alert semantics — auto-commit risked missing events on pod restart mid-batch</div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-key">Redis distributed locks</div>
+        <div class="decision-val">Multiple alerting pods on same partition caused duplicate alert generation without Redisson locking</div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-key">KEDA over CPU-based HPA</div>
+        <div class="decision-val">CPU is a lagging indicator for Kafka consumers; scaling directly on consumer lag is responsive and accurate</div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-key">PgBouncer connection pooling</div>
+        <div class="decision-val">EKS pods × Spring connections easily exceeded RDS max_connections — PgBouncer in transaction mode solved this</div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-key">Parquet on S3 vs JSON</div>
+        <div class="decision-val">10x storage savings; Athena query cost reduced by ~85% due to columnar format and predicate pushdown</div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-key">mTLS service-to-service</div>
+        <div class="decision-val">Zero-trust within VPC; prevents lateral movement if a pod is compromised — never rely on network perimeter alone</div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-key">Hot-reload rule engine (Go)</div>
+        <div class="decision-val">Alerting rules must be changeable without redeployment; background goroutine polls DB every 5m, zero downtime</div>
+      </div>
+    </div>
+
+    <h3>Resume Summary Line</h3>
+    <div class="resume-box">
+      <p>Built and scaled a polyglot microservices platform at A.P. Møller – Maersk processing 500K+ daily shipment events, developing a high-performance Go alerting microservice with goroutine worker pools achieving sub-100ms p99 alert latency, designing Kafka event pipelines on AWS MSK with a 6-topic architecture and KEDA-based autoscaling, and establishing full-stack observability using Prometheus, Grafana, and AWS X-Ray across Java Spring Boot and Go services deployed on EKS with GitOps via ArgoCD.</p>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // Active nav highlight on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`nav a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+
+  // Smooth scroll
+  navLinks.forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+
+</body>
+</html>
